@@ -1,10 +1,11 @@
 #!/bin/sh
 
-LOG="/var/www/html/dev/video/videolog.log"
-YOKOURL="ドメイン名"
+LOG="/var/www/html/dev/video/logs/videolog.log"
 CURRENT_PASS="/var/www/html/dev/video/"
-VIDEO_LIST="${CURRENT_PASS}VIDEO_LIST"
-VIDEO_LIST_OLD="${CURRENT_PASS}VIDEO_LIST_OLD"
+VIDEO_PASS="/var/www/html/dev/video/videofile/"
+LIST_PASS="/var/www/html/dev/video/listfile/"
+VIDEO_LIST="${LIST_PASS}VIDEO_LIST"
+VIDEO_LIST_OLD="${LIST_PASS}VIDEO_LIST_OLD"
 TODAY=`date +"%Y/%m/%d"`
 ONEDAY_AGO=`date +"%Y/%m/%d" -d-1day`
 TWODAY_AGO=`date +"%Y/%m/%d" -d-2day`
@@ -22,47 +23,50 @@ log_msg()
 }
 
 #MAIN
-echo "##### [`date +"%H:%M:%S"`]video download script start #####"
+echo "##### video download script start #####"
 log_msg "video download script start"
 
 #ここでファイル名を変更しておくこと
 mv $VIDEO_LIST $VIDEO_LIST_OLD
 
+#read URL
+URL=`cat URLFILE`
+
 #csv download
 log_msg "CSV download"
-wget -a $LOG -O "${CURRENT_PASS}video.csv" http://ドメイン名/video/video.csv 
+wget -a $LOG -O "${CURRENT_PASS}video.csv" ${URL}video.csv 
 iconv -f SJIS-WIN -t UTF8 ${CURRENT_PASS}video.csv -o ${CURRENT_PASS}video-utf8.csv
 
 #日付を条件に抽出
-cat ${CURRENT_PASS}video-utf8.csv | grep -E $STR_SEARCH_DATE > ${CURRENT_PASS}TMP_VIDEO_LIST
+cat ${CURRENT_PASS}video-utf8.csv | grep -E $STR_SEARCH_DATE > ${LIST_PASS}TMP_VIDEO_LIST
 
 #保存したいタイトルのみ抽出
 while read TITLE
 do
-    cat ${CURRENT_PASS}TMP_VIDEO_LIST | grep $TITLE >> ${CURRENT_PASS}VIDEO_LIST
-done < ${CURRENT_PASS}RECORD_VIDEO_LIST
+    cat ${LIST_PASS}TMP_VIDEO_LIST | grep $TITLE >> ${LIST_PASS}VIDEO_LIST
+done < ${LIST_PASS}RECORD_VIDEO_LIST
 log_msg "show VIDEO_LIST"
-cat ${CURRENT_PASS}VIDEO_LIST >> $LOG
+cat ${LIST_PASS}VIDEO_LIST >> $LOG
 
-diff -u ${CURRENT_PASS}VIDEO_LIST_OLD ${CURRENT_PASS}VIDEO_LIST > ${CURRENT_PASS}TMP_VIDEO_LIST_DIFF
+diff -u ${LIST_PASS}VIDEO_LIST_OLD ${LIST_PASS}VIDEO_LIST > ${LIST_PASS}TMP_VIDEO_LIST_DIFF
 DIFF_RESULT=`echo $?`
 log_msg "diff [VIDEO_LIST_OLD - VIDEO_LIST]"
-cat ${CURRENT_PASS}TMP_VIDEO_LIST_DIFF >> $LOG
+cat ${LIST_PASS}TMP_VIDEO_LIST_DIFF >> $LOG
 
 if [ $DIFF_RESULT -eq 1 ]; then
     #diffがあった場合
     echo "--- I discovered a new video ---"
     STR_VIDEO_ADD="+"`date +"%Y_%m"`
-    cat ${CURRENT_PASS}TMP_VIDEO_LIST_DIFF | grep $STR_VIDEO_ADD > ${CURRENT_PASS}TMP_VIDEO_LIST_ADD
-    sed -e "s/+//g" ${CURRENT_PASS}TMP_VIDEO_LIST_ADD > ${CURRENT_PASS}TMP_VIDEO_LIST_SED
+    cat ${LIST_PASS}TMP_VIDEO_LIST_DIFF | grep $STR_VIDEO_ADD > ${LIST_PASS}TMP_VIDEO_LIST_ADD
+    sed -e "s/+//g" ${LIST_PASS}TMP_VIDEO_LIST_ADD > ${LIST_PASS}TMP_VIDEO_LIST_SED
 
     while read LINE
     do
        MP4FILE_NAME=`echo $LINE | cut -d',' -f1`
        MP4FILE=$MP4FILE_NAME".mp4"
        log_msg "download file $MP4FILE"
-       wget -a $LOG -O "$CURRENT_PASS$MP4FILE" $YOKOURL$MP4FILE 
-    done < ${CURRENT_PASS}TMP_VIDEO_LIST_SED
+       wget -a $LOG -O "$VIDEO_PASS$MP4FILE" $URL$MP4FILE 
+    done < ${LIST_PASS}TMP_VIDEO_LIST_SED
 
 else
     #diffがなかった場合
@@ -71,20 +75,20 @@ else
 fi
 
 #PHPで読み込むため、降順でsortしたファイルを作成
-sort -r ${CURRENT_PASS}VIDEO_LIST > ${CURRENT_PASS}VIDEO_LIST_SORT
+sort -r ${LIST_PASS}VIDEO_LIST > ${LIST_PASS}VIDEO_LIST_SORT
 
 #TMPファイル・CSVファイルの削除
-rm -f ${CURRENT_PASS}TMP_VIDEO_LIST
-rm -f ${CURRENT_PASS}TMP_VIDEO_LIST_DIFF
-rm -f ${CURRENT_PASS}TMP_VIDEO_LIST_ADD
-rm -f ${CURRENT_PASS}TMP_VIDEO_LIST_SED
+rm -f ${LIST_PASS}TMP_VIDEO_LIST
+rm -f ${LIST_PASS}TMP_VIDEO_LIST_DIFF
+rm -f ${LIST_PASS}TMP_VIDEO_LIST_ADD
+rm -f ${LIST_PASS}TMP_VIDEO_LIST_SED
 rm -f ${CURRENT_PASS}video-utf8.csv
 rm -f ${CURRENT_PASS}video.csv
 
 #一週間前の動画ファイルを削除
 log_msg "1week ago mp4file delete!"
-find ${CURRENT_PASS} -name "*.mp4" -mtime +6 | xargs rm -f >> $LOG
+find ${VIDEO_PASS} -name "*.mp4" -mtime +6 | xargs rm -f >> $LOG
 
 log_msg "video download script end"
-echo "##### [`date +"%H:%M:%S"`]video download script end  #####"
+echo "##### video download script end   #####"
 
