@@ -30,7 +30,7 @@ log_msg "video download script start"
 mv $VIDEO_LIST $VIDEO_LIST_OLD
 
 #read URL
-URL=`cat URLFILE`
+URL=`cat ${CURRENT_PASS}URLFILE`
 
 #csv download
 log_msg "CSV download"
