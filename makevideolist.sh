@@ -19,7 +19,7 @@ STR_SEARCH_DATE="$TODAY|$ONEDAY_AGO|$TWODAY_AGO|$THREEDAY_AGO|$FOURDAY_AGO|$FIVE
 log_msg()
 {
     LOG_TITLE=$1
-    echo "[`date +"%H:%M:%S"`]LOG:$LOG_TITLE" >> $LOG
+    echo "[`date +"%Y/%m/%d %H:%M:%S"`]LOG:$LOG_TITLE" >> $LOG
 }
 
 #MAIN
@@ -35,6 +35,11 @@ URL=`cat ${CURRENT_PASS}URLFILE`
 #csv download
 log_msg "CSV download"
 wget -a $LOG -O "${CURRENT_PASS}video.csv" ${URL}video.csv 
+if [ $? -ne 0 ]; then
+    log_msg "CSV could not be retrieved  RC[$?]"
+    log_msg "video download script end"
+    exit 0
+fi
 iconv -f SJIS-WIN -t UTF8 ${CURRENT_PASS}video.csv -o ${CURRENT_PASS}video-utf8.csv
 
 #日付を条件に抽出
