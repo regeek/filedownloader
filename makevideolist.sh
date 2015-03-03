@@ -36,7 +36,7 @@ URL=`cat ${CURRENT_PASS}URLFILE`
 log_msg "CSV download"
 wget -a $LOG -O "${CURRENT_PASS}video.csv" ${URL}video.csv 
 if [ $? -ne 0 ]; then
-    log_msg "CSV could not be retrieved  RC[$?]"
+    log_msg "CSV could not be retrieved"
     log_msg "video download script end"
     exit 0
 fi
