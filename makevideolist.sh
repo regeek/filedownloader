@@ -1,9 +1,9 @@
 #!/bin/sh
 
-LOG="/var/www/html/dev/video/logs/videolog.log"
-CURRENT_PASS="/var/www/html/dev/video/"
-VIDEO_PASS="/var/www/html/dev/video/videofile/"
-LIST_PASS="/var/www/html/dev/video/listfile/"
+LOG="/var/www/html/video/logs/videolog.log"
+CURRENT_PASS="/var/www/html/video/"
+VIDEO_PASS="/var/www/html/video/videofile/"
+LIST_PASS="/var/www/html/video/listfile/"
 VIDEO_LIST="${LIST_PASS}VIDEO_LIST"
 VIDEO_LIST_OLD="${LIST_PASS}VIDEO_LIST_OLD"
 TODAY=`date +"%Y/%m/%d"`
