@@ -14,6 +14,7 @@ FOURDAY_AGO=`date +"%Y/%m/%d" -d-4day`
 FIVEDAY_AGO=`date +"%Y/%m/%d" -d-5day`
 SIXDAY_AGO=`date +"%Y/%m/%d" -d-6day`
 STR_SEARCH_DATE="$TODAY|$ONEDAY_AGO|$TWODAY_AGO|$THREEDAY_AGO|$FOURDAY_AGO|$FIVEDAY_AGO|$SIXDAY_AGO"
+RETRY_CNT=0
 
 #関数
 log_msg()
@@ -33,13 +34,24 @@ mv $VIDEO_LIST $VIDEO_LIST_OLD
 URL=`cat ${CURRENT_PASS}URLFILE`
 
 #csv download
-log_msg "CSV download"
-wget -a $LOG -O "${CURRENT_PASS}video.csv" ${URL}video.csv 
-if [ $? -ne 0 ]; then
-    log_msg "CSV could not be retrieved"
-    log_msg "video download script end"
-    exit 0
-fi
+while true; do
+    log_msg "CSV download"
+    wget -a $LOG -O "${CURRENT_PASS}video.csv" ${URL}video.csv
+    if [ $? -ne 0 ]; then
+        log_msg "CSV could not be retrieved"
+
+        if [[ RETRY_CNT -eq 3 ]]; then
+            #3回リトライしてダメなら終了
+            log_msg "Failed to CSV of acquisition"
+            log_msg "video download script end"
+            exit 0
+        fi
+        RETRY_CNT=`expr $RETRY_CNT + 1`
+        log_msg "CSV download retry start RETRY_CNT=[$RETRY_CNT]"
+    else
+        break
+    fi
+done
 iconv -f SJIS-WIN -t UTF8 ${CURRENT_PASS}video.csv -o ${CURRENT_PASS}video-utf8.csv
 
 #日付を条件に抽出
@@ -70,7 +82,7 @@ if [ $DIFF_RESULT -eq 1 ]; then
        MP4FILE_NAME=`echo $LINE | cut -d',' -f1`
        MP4FILE=$MP4FILE_NAME".mp4"
        log_msg "download file $MP4FILE"
-       wget -a $LOG -O "$VIDEO_PASS$MP4FILE" $URL$MP4FILE 
+       wget -a $LOG -O "$VIDEO_PASS$MP4FILE" $URL$MP4FILE
     done < ${LIST_PASS}TMP_VIDEO_LIST_SED
 
 else
@@ -96,4 +108,3 @@ find ${VIDEO_PASS} -name "*.mp4" -mtime +6 | xargs rm -f >> $LOG
 
 log_msg "video download script end"
 echo "##### video download script end   #####"
-
