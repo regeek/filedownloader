@@ -37,7 +37,9 @@ URL=`cat ${CURRENT_PASS}URLFILE`
 while true; do
     log_msg "CSV download"
     wget -a $LOG -O "${CURRENT_PASS}video.csv" ${URL}video.csv
-    if [ $? -ne 0 ]; then
+    if [ $? -eq 0 ]; then
+        break
+    else
         log_msg "CSV could not be retrieved"
 
         if [[ RETRY_CNT -eq 3 ]]; then
@@ -46,10 +48,9 @@ while true; do
             log_msg "video download script end"
             exit 0
         fi
+        
         RETRY_CNT=`expr $RETRY_CNT + 1`
         log_msg "CSV download retry start RETRY_CNT=[$RETRY_CNT]"
-    else
-        break
     fi
 done
 iconv -f SJIS-WIN -t UTF8 ${CURRENT_PASS}video.csv -o ${CURRENT_PASS}video-utf8.csv
